@@ -540,21 +540,30 @@ function drawBrand(ctx) {
   ctx.fillStyle = "#fff"; ctx.fillText(t, 70, 187); ctx.restore();
 }
 function drawOutro(ctx, t, dur, country) {
-  const g = ctx.createLinearGradient(0, 0, VW, VH); g.addColorStop(0, "#ff4d7a"); g.addColorStop(1, "#6d28d9");
+  // фон як прапор: синій угорі, жовтий унизу, межа — по діагоналі знизу вгору
+  const BLUE = "#0057B7", YELLOW = "#FFD500", NAVY = "#003A80";
+  const g = ctx.createLinearGradient(0, VH, VW * 0.55, 0);
+  g.addColorStop(0, "#FFE14D"); g.addColorStop(0.36, YELLOW); g.addColorStop(0.47, YELLOW);
+  g.addColorStop(0.53, BLUE); g.addColorStop(0.8, BLUE); g.addColorStop(1, "#004A9F");
   ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
   const font = getComputedStyle(document.body).fontFamily;
   const a = Math.min(1, t / 0.35), beat = 1 + 0.05 * Math.sin(t * 6);
-  ctx.save(); ctx.globalAlpha = a; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff";
-  ctx.font = `200px ${font}`; ctx.save(); ctx.translate(VW / 2, VH * 0.3); ctx.scale(beat, beat); ctx.fillText("❤️", 0, 0); ctx.restore();
-  ctx.font = `900 150px ${font}`; ctx.fillText("FlirtUA", VW / 2, VH * 0.45);
+  ctx.save(); ctx.globalAlpha = a; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  // верх (синій): серце, назва, підзаголовок — білим
+  ctx.shadowColor = "rgba(0,20,60,.35)"; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4; ctx.fillStyle = "#fff";
+  ctx.font = `190px ${font}`; ctx.save(); ctx.translate(VW / 2, VH * 0.17); ctx.scale(beat, beat); ctx.fillText("❤️", 0, 0); ctx.restore();
+  ctx.font = `900 150px ${font}`; ctx.fillText("FlirtUA", VW / 2, VH * 0.29);
   ctx.font = `600 54px ${font}`;
-  wrapLines(ctx, "Знайомства для українців за кордоном", VW * 0.8).forEach((l, k) => ctx.fillText(l, VW / 2, VH * 0.53 + k * 66));
-  if (country) { ctx.font = `500 46px ${font}`; ctx.globalAlpha = a * 0.9; ctx.fillText("📍 " + country, VW / 2, VH * 0.63); ctx.globalAlpha = a; }
+  wrapLines(ctx, "Знайомства для українців за кордоном", VW * 0.8).forEach((l, k) => ctx.fillText(l, VW / 2, VH * 0.36 + k * 66));
+  if (country) { ctx.font = `500 46px ${font}`; ctx.fillText("📍 " + country, VW / 2, VH * 0.45); }
+  // низ (жовтий): кнопка з ботом і «Безкоштовно» — синім
+  ctx.shadowColor = "transparent";
   const pill = `Telegram: @${INFO.bot || "FlirtUa_bot"}`;
-  ctx.font = `800 58px ${font}`; const w = ctx.measureText(pill).width + 90;
-  ctx.fillStyle = "#fff"; roundRect(ctx, (VW - w) / 2, VH * 0.7, w, 120, 60); ctx.fill();
-  ctx.fillStyle = "#c2185b"; ctx.fillText(pill, VW / 2, VH * 0.7 + 62);
-  ctx.fillStyle = "#fff"; ctx.font = `600 44px ${font}`; ctx.fillText("Безкоштовно · 18+", VW / 2, VH * 0.8);
+  ctx.font = `800 58px ${font}`; const w = ctx.measureText(pill).width + 90, py = VH * 0.7;
+  ctx.shadowColor = "rgba(0,30,80,.3)"; ctx.shadowBlur = 24; ctx.shadowOffsetY = 8;
+  ctx.fillStyle = BLUE; roundRect(ctx, (VW - w) / 2, py, w, 120, 60); ctx.fill();
+  ctx.shadowColor = "transparent"; ctx.fillStyle = "#fff"; ctx.fillText(pill, VW / 2, py + 62);
+  ctx.fillStyle = NAVY; ctx.font = `700 46px ${font}`; ctx.fillText("Безкоштовно · 18+", VW / 2, VH * 0.81);
   ctx.restore();
 }
 
