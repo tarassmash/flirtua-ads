@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Реклама FlirtUA</title>
+<style>
+:root {
+  --paper: #f3f4f6; --card: #fff; --ink: #161b22; --muted: #637081; --line: #e1e5ea; --soft: #eef1f4;
+  --acc: #e0446a; --acc-ink: #fff; --good: #1d8a57; --bad: #c9373f; --warn: #b77400; --blue: #2f6fd6;
+  --f: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper: #0f1318; --card: #171c23; --ink: #e8ecf0; --muted: #94a0ad; --line: #28303a; --soft: #1f262e; } }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 var(--f); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 16px; }
+header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+header h1 { margin: 0; font-size: 20px; flex: 1; }
+header h1 small { font: 600 11px var(--mono); color: var(--muted); letter-spacing: .08em; margin-left: 6px; text-transform: uppercase; }
+a { color: var(--blue); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 9px 16px; cursor: pointer; font: 600 14px var(--f); white-space: nowrap; text-decoration: none; }
+.btn:hover { border-color: var(--muted); }
+.btn.acc { background: var(--acc); color: var(--acc-ink); border-color: var(--acc); }
+.btn.big { padding: 13px 22px; font-size: 16px; }
+.btn.sm { padding: 5px 10px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+.card h2 { margin: 0 0 12px; font-size: 17px; }
+.muted { color: var(--muted); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+.field { margin: 0 0 14px; }
+.field > label { display: block; font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+select, input, textarea { width: 100%; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 10px; padding: 9px 11px; font: 15px var(--f); }
+textarea { resize: vertical; min-height: 64px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 7px 13px; cursor: pointer; font: 14px var(--f); }
+.chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chip small { opacity: .7; }
+.cost { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+.warnbox { border: 1px solid color-mix(in srgb, var(--warn) 50%, var(--line)); background: color-mix(in srgb, var(--warn) 10%, var(--card)); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+.scene { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.scene:first-of-type { border-top: 0; }
+.thumb { width: 110px; aspect-ratio: 9/16; border-radius: 10px; background: var(--soft); overflow: hidden; display: grid; place-items: center; color: var(--muted); font-size: 12px; text-align: center; position: relative; }
+.thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb .redo { position: absolute; bottom: 5px; left: 5px; right: 5px; }
+.scene .n { font: 700 11px var(--mono); color: var(--acc); letter-spacing: .06em; text-transform: uppercase; }
+.scene .f { display: grid; gap: 6px; }
+.scene .f label { font-size: 12px; color: var(--muted); }
+.scene .f input, .scene .f textarea { font-size: 14px; padding: 7px 9px; }
+.scene .f textarea { min-height: 44px; }
+.steps { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; }
+.steps li { color: var(--muted); }
+.steps li.on { color: var(--ink); font-weight: 600; }
+.steps li.on::before { content: "⏳ "; }
+.steps li.ok { color: var(--good); }
+.steps li.ok::before { content: "✓ "; }
+.steps li.err { color: var(--bad); }
+.steps li.err::before { content: "✕ "; }
+.bar { height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--acc); transition: width .2s; }
+.result { display: grid; grid-template-columns: minmax(220px, 340px) 1fr; gap: 18px; align-items: start; }
+@media (max-width: 760px) { .result { grid-template-columns: 1fr; } }
+.result video { width: 100%; aspect-ratio: 9/16; border-radius: 14px; background: #000; }
+.caption { white-space: pre-wrap; background: var(--soft); border-radius: 10px; padding: 12px; font-size: 14px; user-select: all; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.hist { display: grid; gap: 6px; }
+.hist button { text-align: left; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 10px; padding: 8px 12px; cursor: pointer; font: 14px var(--f); }
+.hist button small { color: var(--muted); margin-left: 6px; }
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 12px; z-index: 99; max-width: calc(100% - 32px); font-weight: 600; }
+.toast.bad { background: var(--bad); color: #fff; }
+.tips { font-size: 13px; color: var(--muted); margin: 0; padding-left: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎬 Реклама FlirtUA <small>TikTok · Reels · Shorts</small></h1>
+    <button class="btn" id="logout" type="button">Выйти</button>
+  </header>
+
+  <div class="warnbox" id="noKey" hidden>
+    <b>Нет ключа fal.ai.</b> Railway → этот сервис → Variables → добавьте <code>FAL_KEY</code> и дождитесь перезапуска.
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>1. Что снимаем</h2>
+      <div class="field"><label>Формат ролика</label><div class="chips" id="formats"></div></div>
+      <div class="field"><label>Страна</label><select id="country"></select></div>
+      <div class="field"><label>Кому показываем</label><div class="chips" id="aud">
+        <button class="chip on" data-v="all">Всем</button><button class="chip" data-v="m">Мужчинам</button><button class="chip" data-v="f">Женщинам</button></div></div>
+      <div class="field"><label>Голос</label><div class="chips" id="voice">
+        <button class="chip on" data-v="female">Женский</button><button class="chip" data-v="male">Мужской</button></div></div>
+      <div class="field"><label>Кадры</label><div class="chips" id="motion">
+        <button class="chip on" data-v="photo">Фото с движением <small>~$0.25</small></button><button class="chip" data-v="kling">Оживить кадры (Kling) <small>~$1.7</small></button></div></div>
+      <div class="field"><label>Идея или пожелание (необязательно)</label><textarea id="idea" placeholder="Например: акцент на «вільний сьогодні» — каву після роботи у Варшаві"></textarea></div>
+      <button class="btn acc big" id="genScript">✨ Придумать сценарий</button>
+      <p class="cost" id="cost"></p>
+    </section>
+
+    <section class="card">
+      <h2>Как это работает</h2>
+      <ol class="tips">
+        <li>Нейросеть пишет сценарий на украинском: крючок в первые секунды, 4 сцены и призыв открыть бота.</li>
+        <li>Сценарий можно поправить: текст на экране, озвучку, описание кадра.</li>
+        <li>«Сделать видео» — рисуются кадры, записывается голос и музыка, ролик 9:16 собирается прямо в браузере (Chrome или Edge).</li>
+        <li>Скачиваете MP4 и копируете готовую подпись с хэштегами для TikTok.</li>
+      </ol>
+      <p class="muted" style="font-size:13px">Цифры про количество анкет берутся из базы бота (если подключён FIREBASE_JSON), иначе в роликах их нет — нейросеть не выдумывает статистику. Люди в кадре сгенерированы: при запуске рекламы в TikTok отметьте «AI-generated content». Реклама знакомств в TikTok — только для 18+ и с ограничениями по странам; проверьте правила рекламного кабинета.</p>
+      <h2 style="margin-top:16px">История сценариев</h2>
+      <div class="hist" id="hist"><span class="muted">Пока пусто</span></div>
+    </section>
+  </div>
+
+  <section class="card" id="scriptCard" hidden>
+    <h2 id="scriptTitle">2. Сценарий</h2>
+    <div id="scenes"></div>
+    <div class="field" style="margin-top:12px"><label>Финал — озвучка призыва</label><input id="ctaVoice"></div>
+    <div class="field"><label>Подпись к посту TikTok</label><textarea id="captionEdit" style="min-height:80px"></textarea></div>
+    <div class="actions">
+      <button class="btn acc big" id="make">🎬 Сделать видео</button>
+      <button class="btn" id="another">🔄 Другой вариант сценария</button>
+    </div>
+  </section>
+
+  <section class="card" id="progCard" hidden>
+    <h2>3. Делаем ролик</h2>
+    <ul class="steps" id="steps">
+      <li data-s="img">Рисуем кадры</li>
+      <li data-s="anim" id="stAnim">Оживляем кадры (Kling)</li>
+      <li data-s="voice">Записываем голос</li>
+      <li data-s="music">Пишем музыку</li>
+      <li data-s="render">Собираем видео 1080×1920</li>
+    </ul>
+    <div class="bar"><i id="bar"></i></div>
+    <p class="muted" id="status" style="margin:8px 0 0"></p>
+  </section>
+
+  <section class="card" id="resCard" hidden>
+    <h2>4. Готово</h2>
+    <div class="result">
+      <video id="out" controls playsinline></video>
+      <div>
+        <div class="actions" style="margin-top:0">
+          <a class="btn acc big" id="dl" download>⬇️ Скачать MP4</a>
+          <button class="btn" id="rebuild">🔁 Пересобрать</button>
+        </div>
+        <p class="muted" id="resInfo" style="margin:0 0 10px"></p>
+        <div class="field"><label>Подпись и хэштеги</label><div class="caption" id="caption"></div></div>
+        <button class="btn" id="copyCap">📋 Копировать подпись</button>
+        <p class="muted" style="font-size:13px;margin-top:14px">Не нравится кадр — нажмите «↻» под ним в сценарии выше, затем «Пересобрать»: голос и музыка останутся, перерисуется только этот кадр.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import { fal } from "https://cdn.jsdelivr.net/npm/@fal-ai/client@1/+esm";
+import { Muxer, ArrayBufferTarget } from "https://cdn.jsdelivr.net/npm/mp4-muxer@5/+esm";
+
+fal.config({ proxyUrl: "/fal" });
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function toast(m, bad) { document.querySelectorAll(".toast").forEach((t) => t.remove()); const d = document.createElement("div"); d.className = "toast" + (bad ? " bad" : ""); d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 4000); }
+const store = { get: (k, d) => { try { return JSON.parse(localStorage.getItem("ads_" + k)) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem("ads_" + k, JSON.stringify(v)); } catch {} } };
+
+const VW = 1080, VH = 1920, FPS = 30;
+const M = {
+  llm: "fal-ai/any-llm",
+  img: "openai/gpt-image-2",
+  anim: "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+  tts: "fal-ai/elevenlabs/tts/eleven-v3",
+  music: "CassetteAI/music-generator",
+};
+const VOICES = { female: "Jessica", male: "Liam" };
+
+const FORMATS = {
+  pov: ["POV-история", "POV: you moved abroad (to the chosen country) and feel lonely among foreigners — then you open FlirtUA in Telegram and see Ukrainians nearby. First-person, relatable, light humour."],
+  problem: ["Проблема → решение", "Start with a sharp relatable problem (hard to meet our people abroad, ordinary dating apps are full of locals and bots, language barrier). Then FlirtUA as the simple solution inside Telegram."],
+  reasons: ["3 причины", "\"3 причини, чому українці за кордоном знайомляться у FlirtUA\": hook, then three fast reasons (each its own scene), then CTA."],
+  hometown: ["Земляки", "Focus on the unique 'Земляки' feature: the bot shows people from your hometown in Ukraine first (marked 🤝). Emotional but light: meeting someone from your Lviv/Kharkiv/Odesa in Valencia/Warsaw."],
+  coffee: ["Кава сьогодні", "Focus on '☕️ Вільний сьогодні': for 24h your profile is higher with a 'can go for coffee' badge — spontaneous meetings after work. Show a city café scene."],
+  compare: ["Обычные приложения vs FlirtUA", "Side-by-side contrast: 'звичайні додатки' (no brand names!) — strangers, language barrier, endless swiping; vs FlirtUA — our people nearby, Ukrainian language, works right in Telegram, free."],
+  story: ["Мини-история", "A short acted mini-story of two Ukrainians abroad who matched in FlirtUA and met for coffee. It must be clearly a story, never presented as a real testimonial or real user."],
+};
+const COUNTRY_EN = { "Іспанія": ["Spain", "Valencia, Barcelona, Madrid, Alicante, Málaga"], "Польща": ["Poland", "Warsaw, Kraków, Wrocław, Gdańsk"], "Німеччина": ["Germany", "Berlin, Munich, Hamburg, Cologne"], "Чехія": ["Czech Republic", "Prague, Brno"], "Італія": ["Italy", "Milan, Rome, Naples, Bologna"] };
+
+// ---------- стан ----------
+let INFO = { countries: [], profiles: {}, total: 0, bot: "" };
+const cfg = { format: store.get("format", "pov"), aud: "all", voice: "female", motion: "photo" };
+let S = null;        // поточний сценарій
+let assets = null;   // { imgs: [url], clips: [url|null], voices: [url], outro: url, music: url }
+
+function chips(id, key, onChange) {
+  const box = $(id);
+  box.querySelectorAll(".chip").forEach((b) => {
+    b.classList.toggle("on", b.dataset.v === cfg[key]);
+    b.onclick = () => { cfg[key] = b.dataset.v; box.querySelectorAll(".chip").forEach((x) => x.classList.toggle("on", x === b)); onChange && onChange(); };
+  });
+}
+function renderFormats() {
+  $("formats").innerHTML = Object.entries(FORMATS).map(([k, [t]]) => `<button class="chip" data-v="${k}">${esc(t)}</button>`).join("");
+  chips("formats", "format", () => store.set("format", cfg.format));
+}
+function costText() {
+  const n = (S && S.scenes.length) || 4;
+  const base = 0.01 + n * 0.05 + 0.02 + 0.02;
+  const t = cfg.motion === "kling" ? base + n * 0.35 : base;
+  $("cost").textContent = `Примерная стоимость в fal.ai: ~$${t.toFixed(2)} за ролик (${n} кадра${cfg.motion === "kling" ? ", оживление Kling" : ""}). Сценарий — меньше цента.`;
+}
+
+async function boot() {
+  renderFormats(); chips("aud", "aud"); chips("voice", "voice"); chips("motion", "motion", costText); costText();
+  try {
+    const r = await fetch("/api/info");
+    if (r.status === 401) { location.href = "/login"; return; }
+    INFO = await r.json();
+  } catch { toast("Не удалось загрузить данные бота", true); }
+  $("noKey").hidden = !!INFO.falKey;
+  $("country").innerHTML = `<option value="">Все страны</option>` + INFO.countries.map((c) => `<option value="${esc(c)}">${esc(c)}${INFO.realCounts ? ` — ${INFO.profiles[c] || 0} анкет` : ""}</option>`).join("");
+  $("country").value = store.get("country", "");
+  $("country").onchange = () => store.set("country", $("country").value);
+  renderHistory();
+}
+
+// ---------- нейросеть-текстовик ----------
+const SYSTEM = "You are an award-winning performance creative director for TikTok who writes native, high-retention short vertical video ads for apps. You write flawless natural Ukrainian (not surzhyk, not translated-from-Russian). You always answer with valid JSON only.";
+async function llmJSON(prompt) {
+  let lastErr;
+  for (const model of ["anthropic/claude-sonnet-4.5", "google/gemini-2.5-flash", null]) {
+    try {
+      const { data } = await fal.subscribe(M.llm, { input: { prompt, system_prompt: SYSTEM, ...(model ? { model } : {}) } });
+      const m = String(data.output || "").match(/\{[\s\S]*\}/);
+      if (!m) throw new Error("нейросеть вернула не JSON");
+      return JSON.parse(m[0]);
+    } catch (e) { lastErr = e; if (/401|403|Нужно войти|FAL_KEY/i.test(String(e.message))) break; }
+  }
+  throw lastErr;
+}
+
+function scriptPrompt() {
+  const c = $("country").value, [cEn, cities] = COUNTRY_EN[c] || ["Spain, Poland, Germany, Czech Republic and Italy", "Valencia, Warsaw, Berlin, Prague, Milan"];
+  const n = c ? (INFO.profiles[c] || 0) : INFO.total;
+  const stats = n >= 50 ? `Real numbers you MAY use (never inflate, round down): ${n} active profiles${c ? " in " + cEn : ""}.` : "Do NOT mention any numbers of users.";
+  const aud = { all: "both men and women 22-40", m: "men 23-40 (so show attractive, friendly Ukrainian women they could meet)", f: "women 22-38 (so show attractive, kind Ukrainian men they could meet)" }[cfg.aud];
+  return `Write a vertical video ad (TikTok / Reels / Shorts), 15-22 seconds total.
+
+PRODUCT: FlirtUA — a dating bot + mini app inside Telegram for Ukrainians living abroad (${cEn}). Telegram: @${INFO.bot || "FlirtUa_bot"}.
+Features (use 1-3 that fit the format, do not list everything):
+- profiles of Ukrainians nearby, sorted by distance; full-screen photo cards, swipe ❤️ / 👎
+- "🏠 Земляки": people from your hometown in Ukraine shown first with 🤝
+- "☕️ Вільний сьогодні": for 24h your profile is higher with a "can go for coffee" badge
+- "💌 Суперлайк" with a short message once a day
+- mutual like → you can write to each other right away
+- free, opens right in Telegram, no website registration, 18+ only
+${stats}
+
+TARGET: ${aud} living in ${cEn}.
+FORMAT: ${FORMATS[cfg.format][1]}
+${$("idea").value.trim() ? "EXTRA WISH FROM THE OWNER: " + $("idea").value.trim() : ""}
+
+RULES:
+- Language of all on-screen text, voice and caption: natural modern Ukrainian, conversational, like a real creator talks.
+- Scene 1 is the HOOK: must stop the scroll in the first 1.5 seconds (question, bold statement or POV).
+- Exactly 4 scenes. "text" = on-screen text, max 7 words, punchy. "voice" = voiceover for that scene, 6-14 words (about 3 seconds).
+- "cta_voice": final call to action, max 10 words, e.g. to find FlirtUA in Telegram.
+- No sexual or suggestive content, no promises of guaranteed dates or love, no fake statistics, no fake testimonials, no names of other apps (say "звичайні додатки"), no war, no sadness exploitation, everyone is an adult 22+.
+- "image": an English prompt for a photorealistic vertical 9:16 image: candid smartphone photo, natural light, real-life scene in ${cities}; people look Ukrainian / Eastern European, stylish, friendly, adults. NO text, NO letters, NO logos, NO phone screens with UI, NO flags. Vary shots (close-up, medium, street, café, seaside, evening lights).
+- "motion": short English prompt describing subtle camera/subject motion for animating that image (e.g. "slow push-in, she smiles and looks at camera").
+- "caption": TikTok post caption in Ukrainian, max 150 characters, with an emoji, ending with a call to find the bot. "hashtags": 6-8 relevant hashtags (Ukrainian + local, e.g. #українцівіспанії #знайомства).
+- "music": English prompt for background music, upbeat, modern, no vocals, fits the mood.
+
+Answer JSON only:
+{"title":"short internal name","scenes":[{"text":"","voice":"","image":"","motion":""}],"cta_voice":"","caption":"","hashtags":["#..."],"music":""}`;
+}
+
+async function genScript() {
+  const btn = $("genScript"), btn2 = $("another");
+  btn.disabled = btn2.disabled = true; const old = btn.textContent; btn.textContent = "⏳ Пишем сценарий…";
+  try {
+    const j = await llmJSON(scriptPrompt());
+    if (!Array.isArray(j.scenes) || j.scenes.length < 2) throw new Error("сценарий получился неполным — попробуйте ещё раз");
+    S = {
+      id: Date.now().toString(36), created: Date.now(), title: String(j.title || FORMATS[cfg.format][0]).slice(0, 60),
+      format: cfg.format, country: $("country").value, aud: cfg.aud, voice: cfg.voice, motion: cfg.motion,
+      scenes: j.scenes.slice(0, 5).map((s) => ({ text: String(s.text || ""), voice: String(s.voice || ""), image: String(s.image || ""), motion: String(s.motion || "slow push-in, subtle natural movement") })),
+      cta: String(j.cta_voice || `Шукай FlirtUA у Telegram`),
+      caption: String(j.caption || "") + "\n\n" + (Array.isArray(j.hashtags) ? j.hashtags.join(" ") : ""),
+      music: String(j.music || "upbeat modern pop, warm, positive, no vocals"),
+    };
+    assets = null;
+    saveHistory();
+    renderScript();
+    $("scriptCard").scrollIntoView({ behavior: "smooth" });
+  } catch (e) { toast("Не получилось: " + (e.body?.detail || e.message), true); }
+  btn.disabled = btn2.disabled = false; btn.textContent = old;
+}
+
+function renderScript() {
+  $("scriptCard").hidden = false;
+  $("scriptTitle").textContent = "2. Сценарий — " + S.title;
+  $("scenes").innerHTML = S.scenes.map((s, i) => `<div class="scene">
+      <div class="thumb" id="th${i}">${assets?.imgs?.[i] ? `<img src="${mediaUrl(assets.imgs[i])}" alt="">` : `кадр ${i + 1}`}${assets?.imgs?.[i] ? `<button class="btn sm redo" data-redo="${i}" title="Перерисовать кадр">↻ Заново</button>` : ""}</div>
+      <div class="f">
+        <span class="n">Сцена ${i + 1}${i === 0 ? " · крючок" : ""}</span>
+        <label>Текст на экране</label><input data-k="text" data-i="${i}" value="${esc(s.text)}" maxlength="60">
+        <label>Озвучка</label><textarea data-k="voice" data-i="${i}" maxlength="200">${esc(s.voice)}</textarea>
+        <label>Кадр (для нейросети, на английском)</label><textarea data-k="image" data-i="${i}" maxlength="900">${esc(s.image)}</textarea>
+      </div></div>`).join("");
+  $("scenes").querySelectorAll("[data-k]").forEach((el) => el.oninput = () => {
+    const sc = S.scenes[+el.dataset.i], k = el.dataset.k;
+    if (assets && sc[k] !== el.value) {
+      if (k === "image" && assets.imgs) { assets.imgs[+el.dataset.i] = null; if (assets.clips) assets.clips[+el.dataset.i] = null; }
+      if (k === "voice" && assets.voices) assets.voices[+el.dataset.i] = null;
+    }
+    sc[k] = el.value; saveHistory();
+  });
+  $("scenes").querySelectorAll("[data-redo]").forEach((b) => b.onclick = () => redoFrame(+b.dataset.redo));
+  $("ctaVoice").value = S.cta; $("ctaVoice").oninput = () => { if (assets) assets.outro = null; S.cta = $("ctaVoice").value; saveHistory(); };
+  $("captionEdit").value = S.caption; $("captionEdit").oninput = () => { S.caption = $("captionEdit").value; $("caption").textContent = S.caption; saveHistory(); };
+  costText();
+}
+
+// ---------- історія ----------
+function saveHistory() {
+  if (!S) return;
+  const h = store.get("history", []).filter((x) => x.id !== S.id);
+  h.unshift(S); store.set("history", h.slice(0, 20)); renderHistory();
+}
+function renderHistory() {
+  const h = store.get("history", []);
+  $("hist").innerHTML = h.length ? h.map((x, i) => `<button data-h="${i}">${esc(x.title)}<small>${FORMATS[x.format]?.[0] || ""} · ${new Date(x.created).toLocaleDateString("ru-RU")}</small></button>`).join("") : `<span class="muted">Пока пусто</span>`;
+  $("hist").querySelectorAll("[data-h]").forEach((b) => b.onclick = () => { S = structuredClone(h[+b.dataset.h]); assets = null; Object.assign(cfg, { voice: S.voice, motion: S.motion }); chips("voice", "voice"); chips("motion", "motion", costText); renderScript(); $("scriptCard").scrollIntoView({ behavior: "smooth" }); });
+}
+
+// ---------- медіа ----------
+const mediaUrl = (u) => "/api/media?url=" + encodeURIComponent(u);
+async function fetchBlob(u) {
+  const r = await fetch(mediaUrl(u));
+  if (!r.ok) throw new Error("файл не скачался (" + r.status + ")");
+  return r.blob();
+}
+async function loadImage(u) { return createImageBitmap(await fetchBlob(u)); }
+async function loadVideo(u) {
+  const v = document.createElement("video");
+  v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = URL.createObjectURL(await fetchBlob(u));
+  await new Promise((ok, bad) => { v.onloadeddata = ok; v.onerror = () => bad(new Error("видео не открылось")); });
+  return v;
+}
+async function decodeAudio(ac, u) { return ac.decodeAudioData(await (await fetchBlob(u)).arrayBuffer()); }
+
+const imgUrlOf = (d) => { const u = d?.images?.[0]?.url || d?.image?.url; if (!u) throw new Error("модель не вернула картинку"); return u; };
+async function genImage(prompt) {
+  const { data } = await fal.subscribe(M.img, { input: { prompt: prompt + ". Photorealistic, vertical 9:16, no text, no letters, no logos.", image_size: { width: 864, height: 1536 }, quality: "medium", num_images: 1, output_format: "jpeg" } });
+  return imgUrlOf(data);
+}
+async function genClip(prompt, imageUrl) {
+  const { data } = await fal.subscribe(M.anim, { input: { prompt, image_url: imageUrl, duration: "5", negative_prompt: "blur, distort, low quality, text, watermark, extra limbs, deformed face" } });
+  const u = data?.video?.url; if (!u) throw new Error("Kling не вернул видео"); return u;
+}
+async function genVoice(text) {
+  const { data } = await fal.subscribe(M.tts, { input: { text, voice: VOICES[S.voice] || "Jessica", stability: 0.5, language_code: "uk", apply_text_normalization: "auto" } });
+  const u = data?.audio?.url; if (!u) throw new Error("озвучка не получилась"); return u;
+}
+async function genMusic(prompt, sec) {
+  const { data } = await fal.subscribe(M.music, { input: { prompt, duration: Math.max(10, Math.ceil(sec)) } });
+  const u = data?.audio_file?.url; if (!u) throw new Error("музыка не получилась"); return u;
+}
+
+// ---------- прогрес ----------
+function step(s, state) { const li = document.querySelector(`#steps [data-s="${s}"]`); if (li) li.className = state || ""; }
+const bar = (f) => ($("bar").style.width = Math.round(f * 100) + "%");
+const status = (t) => ($("status").textContent = t);
+async function pool(items, n, fn) {
+  const out = new Array(items.length); let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); } }));
+  return out;
+}
+
+async function make() {
+  if (!S) return;
+  const btns = [$("make"), $("another"), $("genScript"), $("rebuild")];
+  btns.forEach((b) => (b.disabled = true));
+  $("progCard").hidden = false; $("resCard").hidden = true;
+  $("stAnim").hidden = S.motion !== "kling";
+  ["img", "anim", "voice", "music", "render"].forEach((s) => step(s, ""));
+  $("progCard").scrollIntoView({ behavior: "smooth" });
+  const n = S.scenes.length;
+  assets = assets || {};
+  assets.imgs = Array.from({ length: n }, (_, i) => assets.imgs?.[i] || null);
+  assets.clips = Array.from({ length: n }, (_, i) => assets.clips?.[i] || null);
+  assets.voices = Array.from({ length: n }, (_, i) => assets.voices?.[i] || null);
+  let cur = "img";
+  try {
+    step("img", "on"); status("Рисуем кадры… (около минуты)"); bar(0.05);
+    let done = 0;
+    await pool(S.scenes, 4, async (sc, i) => { if (!assets.imgs[i]) assets.imgs[i] = await genImage(sc.image); done++; bar(0.05 + 0.3 * done / n); });
+    step("img", "ok"); renderScript();
+
+    if (S.motion === "kling") {
+      cur = "anim"; step("anim", "on"); status("Оживляем кадры в Kling… (1–3 минуты)"); done = 0;
+      await pool(S.scenes, 4, async (sc, i) => { if (!assets.clips[i]) assets.clips[i] = await genClip(sc.motion || "slow push-in", assets.imgs[i]); done++; bar(0.35 + 0.25 * done / n); });
+      step("anim", "ok");
+    }
+
+    cur = "voice"; step("voice", "on"); status("Записываем голос…");
+    await pool(S.scenes, 4, async (sc, i) => { if (!assets.voices[i]) assets.voices[i] = await genVoice(sc.voice); });
+    if (!assets.outro) assets.outro = await genVoice(S.cta);
+    step("voice", "ok"); bar(0.65);
+
+    cur = "music"; step("music", "on"); status("Пишем музыку…");
+    if (!assets.music) { try { assets.music = await genMusic(S.music, 30); } catch (e) { assets.music = ""; toast("Музыка не получилась — ролик будет без неё"); } }
+    step("music", "ok"); bar(0.7);
+
+    cur = "render"; step("render", "on"); status("Собираем видео…");
+    const res = await render((f) => { bar(0.7 + 0.3 * f); status(`Собираем видео… ${Math.round(f * 100)}%`); });
+    step("render", "ok"); bar(1); status("Готово!");
+    showResult(res);
+  } catch (e) {
+    step(cur, "err");
+    const msg = e.body?.detail ? (typeof e.body.detail === "string" ? e.body.detail : JSON.stringify(e.body.detail)) : e.message;
+    status("Ошибка: " + msg); toast("Ошибка: " + msg, true);
+  }
+  btns.forEach((b) => (b.disabled = false));
+}
+
+async function redoFrame(i) {
+  const th = $("th" + i); th.innerHTML = `<span>⏳ рисуем…</span>`;
+  try {
+    assets.imgs[i] = await genImage(S.scenes[i].image);
+    if (assets.clips) assets.clips[i] = null;
+    renderScript(); toast(`Кадр ${i + 1} перерисован — нажмите «Пересобрать»`);
+  } catch (e) { toast("Не получилось: " + e.message, true); renderScript(); }
+}
+
+// ---------- монтаж ----------
+function wrapLines(ctx, text, maxW) {
+  const words = String(text).split(/\s+/).filter(Boolean), lines = [];
+  let line = "";
+  for (const w of words) { const t = line ? line + " " + w : w; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; }
+  if (line) lines.push(line);
+  return lines;
+}
+function drawCover(ctx, src, sw, sh, scale, dx, dy) {
+  const s = Math.max(VW / sw, VH / sh) * scale, w = sw * s, h = sh * s;
+  ctx.drawImage(src, (VW - w) / 2 + dx, (VH - h) / 2 + dy, w, h);
+}
+function drawText(ctx, text, t) {
+  if (!text) return;
+  const pop = Math.min(1, t / 0.22), sc = 0.86 + 0.14 * (1 - Math.pow(1 - pop, 3));
+  ctx.save();
+  ctx.translate(VW / 2, VH * 0.24); ctx.scale(sc, sc); ctx.globalAlpha = pop;
+  ctx.font = `800 82px ${getComputedStyle(document.body).fontFamily}`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const lines = wrapLines(ctx, text, VW * 0.8), lh = 98, y0 = -((lines.length - 1) * lh) / 2;
+  lines.forEach((l, k) => {
+    const y = y0 + k * lh, w = ctx.measureText(l).width;
+    ctx.fillStyle = "rgba(0,0,0,.55)"; roundRect(ctx, -w / 2 - 26, y - 52, w + 52, 104, 22); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.fillText(l, 0, y + 4);
+  });
+  ctx.restore();
+}
+function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawBrand(ctx) {
+  ctx.save(); ctx.font = `700 40px ${getComputedStyle(document.body).fontFamily}`; ctx.textBaseline = "middle";
+  const t = "❤️ FlirtUA", w = ctx.measureText(t).width;
+  ctx.fillStyle = "rgba(0,0,0,.42)"; roundRect(ctx, 48, 150, w + 44, 70, 35); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.fillText(t, 70, 187); ctx.restore();
+}
+function drawOutro(ctx, t, dur, country) {
+  const g = ctx.createLinearGradient(0, 0, VW, VH); g.addColorStop(0, "#ff4d7a"); g.addColorStop(1, "#6d28d9");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  const font = getComputedStyle(document.body).fontFamily;
+  const a = Math.min(1, t / 0.35), beat = 1 + 0.05 * Math.sin(t * 6);
+  ctx.save(); ctx.globalAlpha = a; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff";
+  ctx.font = `200px ${font}`; ctx.save(); ctx.translate(VW / 2, VH * 0.3); ctx.scale(beat, beat); ctx.fillText("❤️", 0, 0); ctx.restore();
+  ctx.font = `900 150px ${font}`; ctx.fillText("FlirtUA", VW / 2, VH * 0.45);
+  ctx.font = `600 54px ${font}`;
+  wrapLines(ctx, "Знайомства для українців за кордоном", VW * 0.8).forEach((l, k) => ctx.fillText(l, VW / 2, VH * 0.53 + k * 66));
+  if (country) { ctx.font = `500 46px ${font}`; ctx.globalAlpha = a * 0.9; ctx.fillText("📍 " + country, VW / 2, VH * 0.63); ctx.globalAlpha = a; }
+  const pill = `Telegram: @${INFO.bot || "FlirtUa_bot"}`;
+  ctx.font = `800 58px ${font}`; const w = ctx.measureText(pill).width + 90;
+  ctx.fillStyle = "#fff"; roundRect(ctx, (VW - w) / 2, VH * 0.7, w, 120, 60); ctx.fill();
+  ctx.fillStyle = "#c2185b"; ctx.fillText(pill, VW / 2, VH * 0.7 + 62);
+  ctx.fillStyle = "#fff"; ctx.font = `600 44px ${font}`; ctx.fillText("Безкоштовно · 18+", VW / 2, VH * 0.8);
+  ctx.restore();
+}
+
+async function buildTimeline(ac) {
+  const voiceBufs = await Promise.all(assets.voices.map((u) => decodeAudio(ac, u)));
+  const outroBuf = await decodeAudio(ac, assets.outro);
+  let musicBuf = null;
+  if (assets.music) { try { musicBuf = await decodeAudio(ac, assets.music); } catch {} }
+  const imgs = await Promise.all(assets.imgs.map(loadImage));
+  const clips = await Promise.all(assets.clips.map((u) => (u && S.motion === "kling" ? loadVideo(u) : null)));
+  let t = 0;
+  const parts = S.scenes.map((sc, i) => { const dur = Math.max(2.2, voiceBufs[i].duration + 0.35); const p = { start: t, dur, sc, img: imgs[i], clip: clips[i], voice: voiceBufs[i] }; t += dur; return p; });
+  const outro = { start: t, dur: Math.max(3, outroBuf.duration + 0.8), voice: outroBuf };
+  return { parts, outro, total: outro.start + outro.dur, musicBuf };
+}
+
+function mix(ctx, dest, tl, o = 0) {
+  tl.parts.forEach((p) => { const s = ctx.createBufferSource(); s.buffer = p.voice; s.connect(dest); s.start(o + p.start + 0.12); });
+  const so = ctx.createBufferSource(); so.buffer = tl.outro.voice; so.connect(dest); so.start(o + tl.outro.start + 0.3);
+  if (tl.musicBuf) {
+    const m = ctx.createBufferSource(), g = ctx.createGain();
+    m.buffer = tl.musicBuf; m.loop = true; m.connect(g); g.connect(dest);
+    g.gain.setValueAtTime(0.0001, o); g.gain.linearRampToValueAtTime(0.16, o + 0.4);
+    g.gain.setValueAtTime(0.16, o + Math.max(0.5, tl.total - 1.2)); g.gain.linearRampToValueAtTime(0.0001, o + tl.total);
+    m.start(o); m.stop(o + tl.total);
+  }
+}
+
+async function seekVideo(v, t) {
+  const target = Math.min(Math.max(0, t), (v.duration || 5) - 0.04);
+  if (Math.abs(v.currentTime - target) < 0.005) return;
+  await new Promise((ok) => { v.onseeked = ok; v.currentTime = target; });
+}
+
+function makeFrame(ctx, tl) {
+  const country = S.country;
+  return async (t, offline) => {
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, VW, VH);
+    if (t >= tl.outro.start) return drawOutro(ctx, t - tl.outro.start, tl.outro.dur, country);
+    const i = tl.parts.findIndex((p) => t < p.start + p.dur);
+    const p = tl.parts[i < 0 ? tl.parts.length - 1 : i], lt = t - p.start, k = lt / p.dur;
+    if (p.clip) {
+      if (offline) await seekVideo(p.clip, lt);
+      drawCover(ctx, p.clip, p.clip.videoWidth, p.clip.videoHeight, 1.02, 0, 0);
+    } else {
+      const dir = i % 2 ? -1 : 1;
+      drawCover(ctx, p.img, p.img.width, p.img.height, 1.06 + 0.1 * k, dir * 30 * k, -20 * k);
+    }
+    const g = ctx.createLinearGradient(0, 0, 0, VH * 0.5); g.addColorStop(0, "rgba(0,0,0,.35)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH * 0.5);
+    if (lt < 0.12 && i > 0) { ctx.fillStyle = `rgba(255,255,255,${0.35 * (1 - lt / 0.12)})`; ctx.fillRect(0, 0, VW, VH); }
+    drawText(ctx, p.sc.text, lt);
+    if (i > 0) drawBrand(ctx);
+  };
+}
+
+function peakNormalize(buf) {
+  let peak = 0; for (let c = 0; c < buf.numberOfChannels; c++) { const d = buf.getChannelData(c); for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i])); }
+  const g = peak > 0 ? Math.min(4, 0.89 / peak) : 1;
+  for (let c = 0; c < buf.numberOfChannels; c++) { const d = buf.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] *= g; }
+  return buf;
+}
+
+let ENC;
+async function pickEncoders() {
+  if (ENC !== undefined) return ENC;
+  ENC = null;
+  if (!("VideoEncoder" in window && "AudioEncoder" in window)) return ENC;
+  let v = null, a = null;
+  for (const codec of ["avc1.640028", "avc1.4d0028", "avc1.42e028"]) {
+    const conf = { codec, avc: { format: "avc" }, width: VW, height: VH, bitrate: 10_000_000, framerate: FPS };
+    try { if ((await VideoEncoder.isConfigSupported(conf)).supported) { v = conf; break; } } catch {}
+  }
+  for (const [mux, codec] of [["aac", "mp4a.40.2"], ["opus", "opus"]]) {
+    const conf = { codec, sampleRate: 48000, numberOfChannels: 2, bitrate: 192_000 };
+    try { if ((await AudioEncoder.isConfigSupported(conf)).supported) { a = { mux, conf }; break; } } catch {}
+  }
+  if (v && a) ENC = { v, a };
+  return ENC;
+}
+
+async function render(onProgress) {
+  const SR = 48000, ac = new AudioContext({ sampleRate: SR });
+  const tl = await buildTimeline(ac);
+  const c = document.createElement("canvas"); c.width = VW; c.height = VH;
+  const ctx = c.getContext("2d", { alpha: false });
+  const frame = makeFrame(ctx, tl);
+  const enc = await pickEncoders();
+  if (!enc) return renderRealtime(ac, tl, c, frame, onProgress);
+  ac.close();
+  const oac = new OfflineAudioContext(2, Math.ceil((tl.total + 0.05) * SR), SR);
+  mix(oac, oac.destination, tl);
+  const audio = peakNormalize(await oac.startRendering());
+  const target = new ArrayBufferTarget();
+  const muxer = new Muxer({ target, fastStart: "in-memory", firstTimestampBehavior: "offset",
+    video: { codec: "avc", width: VW, height: VH, frameRate: FPS }, audio: { codec: enc.a.mux, numberOfChannels: 2, sampleRate: SR } });
+  let err = null;
+  const venc = new VideoEncoder({ output: (ch, m) => muxer.addVideoChunk(ch, m), error: (e) => (err = e) }); venc.configure(enc.v);
+  const aenc = new AudioEncoder({ output: (ch, m) => muxer.addAudioChunk(ch, m), error: (e) => (err = e) }); aenc.configure(enc.a.conf);
+  const nF = Math.ceil(tl.total * FPS);
+  for (let i = 0; i < nF; i++) {
+    if (err) throw err;
+    await frame(i / FPS, true);
+    const vf = new VideoFrame(c, { timestamp: Math.round(i * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
+    venc.encode(vf, { keyFrame: i % (FPS * 2) === 0 }); vf.close();
+    while (venc.encodeQueueSize > 6) await sleep(2);
+    if (i % 6 === 0) { onProgress(i / nF); await sleep(0); }
+  }
+  await venc.flush();
+  const L = audio.length, c0 = audio.getChannelData(0), c1 = audio.getChannelData(1), N = 1024;
+  for (let off = 0; off < L; off += N) {
+    const n = Math.min(N, L - off), buf = new Float32Array(n * 2);
+    buf.set(c0.subarray(off, off + n), 0); buf.set(c1.subarray(off, off + n), n);
+    const ad = new AudioData({ format: "f32-planar", sampleRate: SR, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(off / SR * 1e6), data: buf });
+    aenc.encode(ad); ad.close();
+    if (aenc.encodeQueueSize > 20) await sleep(1);
+  }
+  await aenc.flush();
+  if (err) throw err;
+  muxer.finalize(); venc.close(); aenc.close();
+  onProgress(1);
+  return { blob: new Blob([target.buffer], { type: "video/mp4" }), ext: "mp4", total: tl.total, audio: enc.a.mux };
+}
+
+// запасний варіант для браузерів без WebCodecs: запис у реальному часі
+async function renderRealtime(ac, tl, c, frame, onProgress) {
+  if (!(window.MediaRecorder && c.captureStream)) throw new Error("этот браузер не умеет собирать видео — откройте страницу в Chrome или Edge");
+  const mime = ["video/mp4;codecs=avc1,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"].find((m) => MediaRecorder.isTypeSupported(m)) || "";
+  const dest = ac.createMediaStreamDestination();
+  const stream = new MediaStream([...c.captureStream(FPS).getVideoTracks(), ...dest.stream.getAudioTracks()]);
+  const rec = new MediaRecorder(stream, { ...(mime ? { mimeType: mime } : {}), videoBitsPerSecond: 8_000_000 });
+  const chunks = []; rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  const stopped = new Promise((ok) => (rec.onstop = ok));
+  tl.parts.forEach((p) => p.clip && (p.clip.currentTime = 0));
+  await ac.resume();
+  const t0 = ac.currentTime + 0.15;
+  mix(ac, dest, tl, t0);
+  rec.start(250);
+  let playing = null;
+  while (true) {
+    const t = ac.currentTime - t0;
+    if (t >= tl.total) break;
+    if (t >= 0) {
+      const p = tl.parts.find((x) => t >= x.start && t < x.start + x.dur);
+      if (p?.clip && playing !== p) { playing && playing.clip?.pause(); p.clip.currentTime = t - p.start; p.clip.play(); playing = p; }
+      await frame(t, false);
+      onProgress(t / tl.total);
+    }
+    await new Promise((r) => requestAnimationFrame(r));
+  }
+  rec.stop(); await stopped; ac.close();
+  const type = rec.mimeType || mime || "video/webm";
+  return { blob: new Blob(chunks, { type }), ext: type.includes("mp4") ? "mp4" : "webm", total: tl.total };
+}
+
+let lastUrl = null;
+function showResult(res) {
+  if (lastUrl) URL.revokeObjectURL(lastUrl);
+  lastUrl = URL.createObjectURL(res.blob);
+  $("out").src = lastUrl;
+  $("dl").href = lastUrl;
+  $("dl").download = `flirtua-${S.format}-${new Date().toISOString().slice(0, 10)}.${res.ext}`;
+  $("resInfo").textContent = `${res.total.toFixed(1)} с · 1080×1920 · ${(res.blob.size / 1048576).toFixed(1)} МБ · ${res.ext.toUpperCase()}` + (res.ext !== "mp4" ? " — для TikTok лучше собрать в Chrome (MP4)" : "") + (res.audio === "opus" ? " · звук Opus: если TikTok не примет файл, соберите ролик в Chrome на Windows или Mac (там звук AAC)" : "");
+  $("caption").textContent = S.caption;
+  $("resCard").hidden = false;
+  $("resCard").scrollIntoView({ behavior: "smooth" });
+}
+
+$("logout").onclick = async () => { await fetch("/logout", { method: "POST" }); location.href = "/login"; };
+$("genScript").onclick = genScript;
+$("another").onclick = genScript;
+$("make").onclick = make;
+$("rebuild").onclick = make;
+$("copyCap").onclick = async () => { try { await navigator.clipboard.writeText(S.caption); toast("Подпись скопирована"); } catch { toast("Выделите текст и скопируйте вручную", true); } };
+
+// для перевірки без нейромереж
+window.__ads = { setState: (s, a) => { S = s; assets = a; renderScript(); }, render, showResult, scriptPrompt, cfg };
+boot();
+</script>
+</body>
+</html>
