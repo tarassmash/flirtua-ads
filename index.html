@@ -46,6 +46,11 @@ textarea { resize: vertical; min-height: 64px; }
 .thumb { width: 110px; aspect-ratio: 9/16; border-radius: 10px; background: var(--soft); overflow: hidden; display: grid; place-items: center; color: var(--muted); font-size: 12px; text-align: center; position: relative; }
 .thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb .redo { position: absolute; bottom: 5px; left: 5px; right: 5px; }
+.thumb.loading { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .55; } }
+.review { border: 1px solid color-mix(in srgb, var(--acc) 40%, var(--line)); background: color-mix(in srgb, var(--acc) 7%, var(--card)); border-radius: 12px; padding: 12px 14px; margin-top: 12px; }
+.review .frames { display: flex; gap: 8px; margin: 10px 0; overflow-x: auto; }
+.review .frames img { width: 96px; aspect-ratio: 9/16; object-fit: cover; border-radius: 8px; background: var(--soft); }
 .scene .n { font: 700 11px var(--mono); color: var(--acc); letter-spacing: .06em; text-transform: uppercase; }
 .scene .f { display: grid; gap: 6px; }
 .scene .f label { font-size: 12px; color: var(--muted); }
@@ -145,6 +150,11 @@ textarea { resize: vertical; min-height: 64px; }
     </ul>
     <div class="bar"><i id="bar"></i></div>
     <p class="muted" id="status" style="margin:8px 0 0"></p>
+    <div class="review" id="review" hidden>
+      <b>Кадры готовы — проверьте их.</b> Не нравится кадр — поправьте описание в сценарии и нажмите «↻ Заново» под ним. Всё хорошо — продолжайте.
+      <div class="frames" id="revFrames"></div>
+      <div class="actions" style="margin:0"><button class="btn acc big" id="goOn">▶︎ Продолжить монтаж</button><button class="btn" id="toScript">✏️ К сценарию</button></div>
+    </div>
   </section>
 
   <section class="card" id="resCard" hidden>
@@ -346,11 +356,27 @@ async function genScript() {
   btn.disabled = btn2.disabled = false; btn.textContent = old;
 }
 
+// кадр показуємо напряму з fal (для <img> CORS не потрібен), а якщо не відкрився — через наш сервер
+const imgTag = (u, extra = "") => `<img src="${esc(u)}" alt="" ${extra} onerror="if(!this.dataset.p){this.dataset.p=1;this.src='/api/media?url='+encodeURIComponent(this.getAttribute('src'))}">`;
+function thumbHtml(i) {
+  const u = assets?.imgs?.[i];
+  if (u) return imgTag(u) + `<button class="btn sm redo" data-redo="${i}" title="Перерисовать кадр">↻ Заново</button>`;
+  return assets?.pending?.[i] ? "⏳ рисуем…" : `кадр ${i + 1}`;
+}
+function setThumb(i) {
+  const th = $("th" + i); if (!th) return;
+  th.classList.toggle("loading", !!assets?.pending?.[i] && !assets?.imgs?.[i]);
+  th.innerHTML = thumbHtml(i);
+  const b = th.querySelector("[data-redo]"); if (b) b.onclick = () => redoFrame(i);
+}
+function renderReview() {
+  $("revFrames").innerHTML = (assets?.imgs || []).map((u, i) => (u ? imgTag(u, `title="Кадр ${i + 1}"`) : "")).join("");
+}
 function renderScript() {
   $("scriptCard").hidden = false;
   $("scriptTitle").textContent = "2. Сценарий — " + S.title;
   $("scenes").innerHTML = S.scenes.map((s, i) => `<div class="scene">
-      <div class="thumb" id="th${i}">${assets?.imgs?.[i] ? `<img src="${mediaUrl(assets.imgs[i])}" alt="">` : `кадр ${i + 1}`}${assets?.imgs?.[i] ? `<button class="btn sm redo" data-redo="${i}" title="Перерисовать кадр">↻ Заново</button>` : ""}</div>
+      <div class="thumb" id="th${i}">${thumbHtml(i)}</div>
       <div class="f">
         <span class="n">Сцена ${i + 1}${i === 0 ? " · крючок" : ""}</span>
         <label>Текст на экране</label><input data-k="text" data-i="${i}" value="${esc(s.text)}" maxlength="60">
@@ -445,8 +471,9 @@ async function pool(items, n, fn) {
   return out;
 }
 
-async function make() {
+async function make(opts = {}) {
   if (!S) return;
+  $("review").hidden = true;
   const btns = [$("make"), $("another"), $("genScript"), $("rebuild")];
   btns.forEach((b) => (b.disabled = true));
   $("progCard").hidden = false; $("resCard").hidden = true;
@@ -460,10 +487,22 @@ async function make() {
   assets.voices = Array.from({ length: n }, (_, i) => assets.voices?.[i] || null);
   let cur = "img";
   try {
-    step("img", "on"); status("Рисуем кадры… (около минуты)"); bar(0.05);
-    let done = 0;
-    await pool(S.scenes, 4, async (sc, i) => { if (!assets.imgs[i]) assets.imgs[i] = await genImage(sc.image); done++; bar(0.05 + 0.3 * done / n); });
-    step("img", "ok"); renderScript();
+    step("img", "on"); status("Рисуем кадры… (около минуты) — они появятся в сценарии по мере готовности"); bar(0.05);
+    let done = 0, fresh = 0;
+    assets.pending = S.scenes.map((_, i) => !assets.imgs[i]);
+    S.scenes.forEach((_, i) => setThumb(i));
+    await pool(S.scenes, 4, async (sc, i) => {
+      if (!assets.imgs[i]) { assets.imgs[i] = await genImage(sc.image); fresh++; }
+      assets.pending[i] = false; setThumb(i); done++; bar(0.05 + 0.3 * done / n);
+    });
+    step("img", "ok");
+    // зупинка на перевірку кадрів, щоб не платити за анімацію / монтаж поганого кадру
+    if (fresh && !opts.go) {
+      status(""); bar(0.35); renderReview(); $("review").hidden = false;
+      $("review").scrollIntoView({ behavior: "smooth", block: "center" });
+      btns.forEach((b) => (b.disabled = false));
+      return;
+    }
 
     if (S.motion === "kling") {
       cur = "anim"; step("anim", "on"); status("Оживляем кадры в Kling… (1–3 минуты)"); done = 0;
@@ -497,12 +536,13 @@ async function make() {
 }
 
 async function redoFrame(i) {
-  const th = $("th" + i); th.innerHTML = `<span>⏳ рисуем…</span>`;
+  assets.pending = assets.pending || []; assets.pending[i] = true; assets.imgs[i] = null; setThumb(i);
   try {
     assets.imgs[i] = await genImage(S.scenes[i].image);
     if (assets.clips) assets.clips[i] = null;
-    renderScript(); toast(`Кадр ${i + 1} перерисован — нажмите «Пересобрать»`);
-  } catch (e) { toast("Не получилось: " + e.message, true); renderScript(); }
+    toast(`Кадр ${i + 1} перерисован` + ($("resCard").hidden ? "" : " — нажмите «Пересобрать»"));
+  } catch (e) { toast("Не получилось: " + e.message, true); }
+  assets.pending[i] = false; setThumb(i); renderReview();
 }
 
 // ---------- монтаж ----------
@@ -746,8 +786,10 @@ function showResult(res) {
 $("logout").onclick = async () => { await fetch("/logout", { method: "POST" }); location.href = "/login"; };
 $("genScript").onclick = genScript;
 $("another").onclick = genScript;
-$("make").onclick = make;
-$("rebuild").onclick = make;
+$("make").onclick = () => make();
+$("rebuild").onclick = () => make({ go: true });
+$("goOn").onclick = () => { if ((assets?.imgs || []).some((u) => !u)) return toast("Дождитесь, пока перерисуется кадр", true); make({ go: true }); };
+$("toScript").onclick = () => $("scriptCard").scrollIntoView({ behavior: "smooth" });
 $("copyCap").onclick = async () => { try { await navigator.clipboard.writeText(S.caption); toast("Подпись скопирована"); } catch { toast("Выделите текст и скопируйте вручную", true); } };
 
 // для перевірки без нейромереж
