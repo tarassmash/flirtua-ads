@@ -10,7 +10,10 @@
   BOT_USERNAME   — ім'я бота без @, за замовчуванням FlirtUa_bot
   COUNTRIES      — країни через кому, за замовчуванням Іспанія, Польща, Німеччина, Чехія, Італія
   FIREBASE_JSON  — (необов'язково) ключ Firebase бота: тоді в рекламі будуть справжні цифри анкет
+  ELEVENLABS_API_KEY — (рекомендовано) ключ ElevenLabs: озвучка напряму, будь-який голос з вашого акаунта,
+                   одним дублем з таймкодами. Без нього — ElevenLabs через fal.ai (два стандартні голоси)
 """
+import base64
 import asyncio
 import hashlib
 import hmac
@@ -28,6 +31,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 
 FAL_KEY = os.getenv("FAL_KEY", "").strip()
+EL_KEY = (os.getenv("ELEVENLABS_API_KEY") or os.getenv("ELEVEN_API_KEY") or "").strip()
+EL_API = "https://api.elevenlabs.io"
+EL_MODELS = {"eleven_v3", "eleven_multilingual_v2"}
 PASSWORD = os.getenv("APP_PASSWORD", "").strip()
 BOT_USERNAME = os.getenv("BOT_USERNAME", "FlirtUa_bot").strip().lstrip("@")
 COUNTRIES = [c.strip() for c in os.getenv("COUNTRIES", "Іспанія, Польща, Німеччина, Чехія, Італія").split(",") if c.strip()]
@@ -157,7 +163,81 @@ async def info(req):
         "profiles": {k: (c.get(k, 0) if c else 0) for k in COUNTRIES},
         "total": sum(c.values()) if c else 0,
         "realCounts": c is not None,
+        "elevenlabs": bool(EL_KEY),
     })
+
+
+# ---------- ElevenLabs напряму ----------
+_voices = {"at": 0, "data": None}
+
+
+def voice_out(v):
+    lab = v.get("labels") or {}
+    langs = [x.get("language") for x in (v.get("verified_languages") or []) if x.get("language")]
+    return {"id": v.get("voice_id"), "name": v.get("name", ""), "category": v.get("category", ""),
+            "gender": lab.get("gender", ""), "accent": lab.get("accent", ""), "age": lab.get("age", ""),
+            "lang": lab.get("language", "") or ",".join(langs), "description": lab.get("description", "") or lab.get("descriptive", ""),
+            "preview": v.get("preview_url", "")}
+
+
+async def voices(req):
+    if not authed(req):
+        return web.json_response({"error": "Нужно войти"}, status=401)
+    if not EL_KEY:
+        return web.json_response({"error": "Нет ELEVENLABS_API_KEY"}, status=400)
+    if _voices["data"] is None or time.time() - _voices["at"] > 300 or req.query.get("fresh"):
+        s = await session()
+        async with s.get(f"{EL_API}/v1/voices", headers={"xi-api-key": EL_KEY}) as r:
+            if r.status != 200:
+                return web.json_response({"error": f"ElevenLabs: {(await r.text())[:300]}"}, status=502)
+            data = await r.json()
+        _voices.update(at=time.time(), data=[voice_out(v) for v in data.get("voices", [])])
+    return web.json_response({"voices": _voices["data"]})
+
+
+def el_settings(model, b):
+    if model == "eleven_v3":
+        st = float(b.get("stability", 0.5))
+        return {"stability": min((0.0, 0.5, 1.0), key=lambda x: abs(x - st))}  # v3: Creative / Natural / Robust
+    return {"stability": float(b.get("stability", 0.45)), "similarity_boost": 0.8, "style": float(b.get("style", 0.3)), "use_speaker_boost": True}
+
+
+async def tts(req):
+    """Озвучка через ElevenLabs. timestamps=true → JSON з audio_base64 і таймкодами символів, інакше mp3."""
+    if not authed(req):
+        return web.json_response({"error": "Нужно войти"}, status=401)
+    if not EL_KEY:
+        return web.json_response({"error": "Нет ELEVENLABS_API_KEY"}, status=400)
+    b = await req.json()
+    text = str(b.get("text", "")).strip()
+    vid = str(b.get("voice_id", "")).strip()
+    model = b.get("model") if b.get("model") in EL_MODELS else "eleven_v3"
+    if not text or len(text) > 3000 or not vid.replace("-", "").isalnum():
+        return web.json_response({"error": "Нужен текст (до 3000 символов) и голос"}, status=400)
+    body = {"text": text, "model_id": model, "voice_settings": el_settings(model, b)}
+    if model == "eleven_v3":
+        body["language_code"] = "uk"
+    ts = bool(b.get("timestamps"))
+    url = f"{EL_API}/v1/text-to-speech/{vid}" + ("/with-timestamps" if ts else "") + "?output_format=mp3_44100_128"
+    s = await session()
+    for attempt in range(2):
+        async with s.post(url, headers={"xi-api-key": EL_KEY, "content-type": "application/json"}, json=body) as r:
+            if r.status == 200:
+                if ts:
+                    d = await r.json()
+                    return web.json_response({"audio_base64": d.get("audio_base64"), "alignment": d.get("alignment") or d.get("normalized_alignment")})
+                return web.Response(body=await r.read(), content_type="audio/mpeg")
+            err = await r.text()
+        if attempt == 0 and "language_code" in body and "language" in err.lower():
+            body.pop("language_code")  # модель не приймає мову — пробуємо без неї
+            continue
+        break
+    try:
+        msg = json.loads(err).get("detail", {})
+        msg = msg.get("message") if isinstance(msg, dict) else msg
+    except Exception:  # noqa: BLE001
+        msg = err[:300]
+    return web.json_response({"error": f"ElevenLabs: {msg}"}, status=502)
 
 
 _session = None
@@ -219,7 +299,7 @@ async def media(req):
 
 
 async def health(req):
-    return web.json_response({"ok": True, "falKey": bool(FAL_KEY), "password": bool(PASSWORD), "firebase": db is not None})
+    return web.json_response({"ok": True, "falKey": bool(FAL_KEY), "password": bool(PASSWORD), "firebase": db is not None, "elevenlabs": bool(EL_KEY)})
 
 
 def make_app():
@@ -232,6 +312,8 @@ def make_app():
     r.add_get("/api/info", info)
     r.add_get("/api/media", media)
     r.add_route("*", "/fal", fal_proxy)
+    r.add_get("/api/voices", voices)
+    r.add_post("/api/tts", tts)
     r.add_get("/health", health)
     return app
 

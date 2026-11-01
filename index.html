@@ -92,8 +92,16 @@ textarea { resize: vertical; min-height: 64px; }
       <div class="field"><label>Страна</label><select id="country"></select></div>
       <div class="field"><label>Кому показываем</label><div class="chips" id="aud">
         <button class="chip on" data-v="all">Всем</button><button class="chip" data-v="m">Мужчинам</button><button class="chip" data-v="f">Женщинам</button></div></div>
-      <div class="field"><label>Голос</label><div class="chips" id="voice">
-        <button class="chip on" data-v="female">Женский</button><button class="chip" data-v="male">Мужской</button></div></div>
+      <div class="field" id="voiceFal"><label>Голос</label><div class="chips" id="voice">
+        <button class="chip on" data-v="female">Женский</button><button class="chip" data-v="male">Мужской</button></div>
+        <span class="muted" style="font-size:12.5px">Для топового голоса добавьте <code>ELEVENLABS_API_KEY</code> в Railway — появится выбор любого голоса ElevenLabs.</span></div>
+      <div class="field" id="voiceEl" hidden><label>Голос ElevenLabs</label>
+        <div style="display:flex;gap:8px"><select id="elVoice" style="flex:1"></select><button class="btn" id="elPlay" type="button" title="Прослушать">▶︎</button></div>
+        <div class="chips" id="elModel" style="margin-top:8px">
+          <button class="chip on" data-v="eleven_v3">Eleven v3 <small>самый живой, с эмоциями</small></button><button class="chip" data-v="eleven_multilingual_v2">Multilingual v2 <small>ровнее</small></button></div>
+        <div class="chips" id="elStab" style="margin-top:8px">
+          <button class="chip" data-v="0">Эмоционально</button><button class="chip on" data-v="0.5">Естественно</button><button class="chip" data-v="1">Ровно</button></div>
+        <span class="muted" style="font-size:12.5px">Нативные украинские голоса: <a href="https://elevenlabs.io/app/voice-library?language=uk" target="_blank" rel="noopener">Voice Library → Ukrainian</a> → «Add to my voices», затем <a href="#" id="elRefresh">обновить список</a>.</span></div>
       <div class="field"><label>Кадры</label><div class="chips" id="motion">
         <button class="chip on" data-v="photo">Фото с движением <small>~$0.25</small></button><button class="chip" data-v="kling">Оживить кадры (Kling) <small>~$1.7</small></button></div></div>
       <div class="field"><label>Идея или пожелание (необязательно)</label><textarea id="idea" placeholder="Например: акцент на «вільний сьогодні» — каву після роботи у Варшаві"></textarea></div>
@@ -192,7 +200,8 @@ const COUNTRY_EN = { "Іспанія": ["Spain", "Valencia, Barcelona, Madrid, A
 
 // ---------- стан ----------
 let INFO = { countries: [], profiles: {}, total: 0, bot: "" };
-const cfg = { format: store.get("format", "pov"), aud: "all", voice: "female", motion: "photo" };
+const cfg = { format: store.get("format", "pov"), aud: "all", voice: "female", motion: "photo", elModel: store.get("elModel", "eleven_v3"), elStab: store.get("elStab", "0.5") };
+const EL = () => !!INFO.elevenlabs && !!$("elVoice").value;
 let S = null;        // поточний сценарій
 let assets = null;   // { imgs: [url], clips: [url|null], voices: [url], outro: url, music: url }
 
@@ -216,6 +225,8 @@ function costText() {
 
 async function boot() {
   renderFormats(); chips("aud", "aud"); chips("voice", "voice"); chips("motion", "motion", costText); costText();
+  chips("elModel", "elModel", () => { store.set("elModel", cfg.elModel); if (assets) assets.vo = null; });
+  chips("elStab", "elStab", () => { store.set("elStab", cfg.elStab); if (assets) assets.vo = null; });
   try {
     const r = await fetch("/api/info");
     if (r.status === 401) { location.href = "/login"; return; }
@@ -226,6 +237,39 @@ async function boot() {
   $("country").value = store.get("country", "");
   $("country").onchange = () => store.set("country", $("country").value);
   renderHistory();
+  if (INFO.elevenlabs) { $("voiceFal").hidden = true; $("voiceEl").hidden = false; await loadVoices(); }
+}
+
+// ---------- голоси ElevenLabs ----------
+const isUk = (v) => /uk|ukrain/i.test(v.lang + " " + v.accent + " " + v.name + " " + v.description);
+async function loadVoices(fresh) {
+  try {
+    const r = await fetch("/api/voices" + (fresh ? "?fresh=1" : "")); const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    const vs = d.voices.sort((a, b) => (isUk(b) - isUk(a)) || a.name.localeCompare(b.name));
+    const g = (v) => [v.gender === "female" ? "жен." : v.gender === "male" ? "муж." : "", v.accent, v.age].filter(Boolean).join(", ");
+    $("elVoice").innerHTML = vs.map((v) => `<option value="${esc(v.id)}">${isUk(v) ? "🇺🇦 " : ""}${esc(v.name)}${g(v) ? " — " + esc(g(v)) : ""}</option>`).join("");
+    const saved = store.get("elVoice", "");
+    $("elVoice").value = vs.some((v) => v.id === saved) ? saved : (vs[0]?.id || "");
+  } catch (e) { toast("Не удалось загрузить голоса ElevenLabs: " + e.message, true); }
+}
+$("elVoice").onchange = () => { store.set("elVoice", $("elVoice").value); if (assets) assets.vo = null; };
+$("elRefresh").onclick = (e) => { e.preventDefault(); loadVoices(true).then(() => toast("Список голосов обновлён")); };
+let previewAudio = null;
+$("elPlay").onclick = async () => {
+  const b = $("elPlay"); b.disabled = true; b.textContent = "⏳";
+  try {
+    const sample = cfg.elModel === "eleven_v3" ? "[excited] Привіт! Шукаєш наших за кордоном? Відкривай FlirtUA просто в Телеграмі." : "Привіт! Шукаєш наших за кордоном? Відкривай FlirtUA просто в Телеграмі.";
+    const blob = await elTTS(sample, false);
+    previewAudio?.pause(); previewAudio = new Audio(URL.createObjectURL(blob)); await previewAudio.play();
+  } catch (e) { toast(e.message, true); }
+  b.disabled = false; b.textContent = "▶︎";
+};
+async function elTTS(text, timestamps) {
+  const r = await fetch("/api/tts", { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ text, voice_id: $("elVoice").value, model: cfg.elModel, stability: +cfg.elStab, timestamps }) });
+  if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || "озвучка не получилась (" + r.status + ")"); }
+  return timestamps ? r.json() : r.blob();
 }
 
 // ---------- нейросеть-текстовик ----------
@@ -269,6 +313,7 @@ RULES:
 - Scene 1 is the HOOK: must stop the scroll in the first 1.5 seconds (question, bold statement or POV).
 - Exactly 4 scenes. "text" = on-screen text, max 7 words, punchy. "voice" = voiceover for that scene, 6-14 words (about 3 seconds).
 - "cta_voice": final call to action, max 10 words, e.g. to find FlirtUA in Telegram.
+${INFO.elevenlabs && cfg.elModel === "eleven_v3" ? '- The voiceover is read by ElevenLabs v3: you MAY add 1-3 English audio tags in square brackets inside "voice"/"cta_voice" to make it sound alive, e.g. [excited], [laughs], [whispers], [curious], [sighs]. Never in "text".' : '- No square-bracket tags anywhere.'}
 - No sexual or suggestive content, no promises of guaranteed dates or love, no fake statistics, no fake testimonials, no names of other apps (say "звичайні додатки"), no war, no sadness exploitation, everyone is an adult 22+.
 - "image": an English prompt for a photorealistic vertical 9:16 image: candid smartphone photo, natural light, real-life scene in ${cities}; people look Ukrainian / Eastern European, stylish, friendly, adults. NO text, NO letters, NO logos, NO phone screens with UI, NO flags. Vary shots (close-up, medium, street, café, seaside, evening lights).
 - "motion": short English prompt describing subtle camera/subject motion for animating that image (e.g. "slow push-in, she smiles and looks at camera").
@@ -316,12 +361,12 @@ function renderScript() {
     const sc = S.scenes[+el.dataset.i], k = el.dataset.k;
     if (assets && sc[k] !== el.value) {
       if (k === "image" && assets.imgs) { assets.imgs[+el.dataset.i] = null; if (assets.clips) assets.clips[+el.dataset.i] = null; }
-      if (k === "voice" && assets.voices) assets.voices[+el.dataset.i] = null;
+      if (k === "voice") { if (assets.voices) assets.voices[+el.dataset.i] = null; assets.vo = null; }
     }
     sc[k] = el.value; saveHistory();
   });
   $("scenes").querySelectorAll("[data-redo]").forEach((b) => b.onclick = () => redoFrame(+b.dataset.redo));
-  $("ctaVoice").value = S.cta; $("ctaVoice").oninput = () => { if (assets) assets.outro = null; S.cta = $("ctaVoice").value; saveHistory(); };
+  $("ctaVoice").value = S.cta; $("ctaVoice").oninput = () => { if (assets) { assets.outro = null; assets.vo = null; } S.cta = $("ctaVoice").value; saveHistory(); };
   $("captionEdit").value = S.caption; $("captionEdit").oninput = () => { S.caption = $("captionEdit").value; $("caption").textContent = S.caption; saveHistory(); };
   costText();
 }
@@ -341,7 +386,7 @@ function renderHistory() {
 // ---------- медіа ----------
 const mediaUrl = (u) => "/api/media?url=" + encodeURIComponent(u);
 async function fetchBlob(u) {
-  const r = await fetch(mediaUrl(u));
+  const r = await fetch(/^(blob|data):/.test(u) ? u : mediaUrl(u));
   if (!r.ok) throw new Error("файл не скачался (" + r.status + ")");
   return r.blob();
 }
@@ -362,6 +407,24 @@ async function genImage(prompt) {
 async function genClip(prompt, imageUrl) {
   const { data } = await fal.subscribe(M.anim, { input: { prompt, image_url: imageUrl, duration: "5", negative_prompt: "blur, distort, low quality, text, watermark, extra limbs, deformed face" } });
   const u = data?.video?.url; if (!u) throw new Error("Kling не вернул видео"); return u;
+}
+const stripTags = (t) => String(t).replace(/\[[^\]]{1,30}\]\s*/g, "").trim();
+// озвучка всього ролика одним дублем: природна інтонація, сцени ріжемо за таймкодами символів
+async function genWholeVoiceover() {
+  const tagsOk = cfg.elModel === "eleven_v3";
+  const parts = [...S.scenes.map((s) => s.voice), S.cta].map((t) => (tagsOk ? String(t) : stripTags(t)).trim());
+  let text = "", offs = [];
+  parts.forEach((p, k) => { if (k) text += k === parts.length - 1 ? "\n\n" : " "; offs.push(text.length); text += p; });
+  const d = await elTTS(text, true);
+  const bin = atob(d.audio_base64), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
+  const al = d.alignment || {}, st = al.character_start_times_seconds || [], en = al.character_end_times_seconds || [];
+  const audioEnd = en.length ? en[en.length - 1] : 0;
+  // якщо таймкоди не збігаються з текстом (теги, нормалізація) — ділимо пропорційно довжині
+  const exact = st.length === text.length;
+  const starts = offs.map((o) => (exact ? st[o] : (o / text.length) * audioEnd));
+  return { url, starts, end: audioEnd, exact };
 }
 async function genVoice(text) {
   const { data } = await fal.subscribe(M.tts, { input: { text, voice: VOICES[S.voice] || "Jessica", stability: 0.5, language_code: "uk", apply_text_normalization: "auto" } });
@@ -409,8 +472,12 @@ async function make() {
     }
 
     cur = "voice"; step("voice", "on"); status("Записываем голос…");
-    await pool(S.scenes, 4, async (sc, i) => { if (!assets.voices[i]) assets.voices[i] = await genVoice(sc.voice); });
-    if (!assets.outro) assets.outro = await genVoice(S.cta);
+    if (EL()) {
+      if (!assets.vo) assets.vo = await genWholeVoiceover();
+    } else {
+      await pool(S.scenes, 4, async (sc, i) => { if (!assets.voices[i]) assets.voices[i] = await genVoice(stripTags(sc.voice)); });
+      if (!assets.outro) assets.outro = await genVoice(stripTags(S.cta));
+    }
     step("voice", "ok"); bar(0.65);
 
     cur = "music"; step("music", "on"); status("Пишем музыку…");
@@ -492,12 +559,22 @@ function drawOutro(ctx, t, dur, country) {
 }
 
 async function buildTimeline(ac) {
-  const voiceBufs = await Promise.all(assets.voices.map((u) => decodeAudio(ac, u)));
-  const outroBuf = await decodeAudio(ac, assets.outro);
   let musicBuf = null;
   if (assets.music) { try { musicBuf = await decodeAudio(ac, assets.music); } catch {} }
   const imgs = await Promise.all(assets.imgs.map(loadImage));
   const clips = await Promise.all(assets.clips.map((u) => (u && S.motion === "kling" ? loadVideo(u) : null)));
+  if (assets.vo && EL()) {
+    // один дубль: межі сцен — моменти, коли починається текст наступної сцени
+    const vo = assets.vo, buf = await decodeAudio(ac, vo.url), LEAD = 0.15, n = S.scenes.length;
+    const end = vo.end > 0 ? Math.min(buf.duration, vo.end) : buf.duration;
+    const b = [0, ...vo.starts.slice(1).map((x) => x + LEAD - 0.08)];
+    for (let k = 1; k < b.length; k++) b[k] = Math.max(b[k], b[k - 1] + 1.2);
+    const parts = S.scenes.map((sc, i) => ({ start: b[i], dur: b[i + 1] - b[i], sc, img: imgs[i], clip: clips[i] }));
+    const oStart = b[n], outro = { start: oStart, dur: Math.max(2.8, end + LEAD - oStart + 0.9) };
+    return { parts, outro, total: oStart + outro.dur, musicBuf, vo: { buf, at: LEAD } };
+  }
+  const voiceBufs = await Promise.all(assets.voices.map((u) => decodeAudio(ac, u)));
+  const outroBuf = await decodeAudio(ac, assets.outro);
   let t = 0;
   const parts = S.scenes.map((sc, i) => { const dur = Math.max(2.2, voiceBufs[i].duration + 0.35); const p = { start: t, dur, sc, img: imgs[i], clip: clips[i], voice: voiceBufs[i] }; t += dur; return p; });
   const outro = { start: t, dur: Math.max(3, outroBuf.duration + 0.8), voice: outroBuf };
@@ -505,8 +582,9 @@ async function buildTimeline(ac) {
 }
 
 function mix(ctx, dest, tl, o = 0) {
-  tl.parts.forEach((p) => { const s = ctx.createBufferSource(); s.buffer = p.voice; s.connect(dest); s.start(o + p.start + 0.12); });
-  const so = ctx.createBufferSource(); so.buffer = tl.outro.voice; so.connect(dest); so.start(o + tl.outro.start + 0.3);
+  if (tl.vo) { const s = ctx.createBufferSource(); s.buffer = tl.vo.buf; s.connect(dest); s.start(o + tl.vo.at); }
+  else tl.parts.forEach((p) => { const s = ctx.createBufferSource(); s.buffer = p.voice; s.connect(dest); s.start(o + p.start + 0.12); });
+  if (!tl.vo) { const so = ctx.createBufferSource(); so.buffer = tl.outro.voice; so.connect(dest); so.start(o + tl.outro.start + 0.3); }
   if (tl.musicBuf) {
     const m = ctx.createBufferSource(), g = ctx.createGain();
     m.buffer = tl.musicBuf; m.loop = true; m.connect(g); g.connect(dest);
