@@ -201,6 +201,7 @@ const FORMATS = {
   pov: ["POV-история", "POV: you moved abroad (to the chosen country) and feel lonely among foreigners — then you open FlirtUA in Telegram and see Ukrainians nearby. First-person, relatable, light humour."],
   problem: ["Проблема → решение", "Start with a sharp relatable problem (hard to meet our people abroad, ordinary dating apps are full of locals and bots, language barrier). Then FlirtUA as the simple solution inside Telegram."],
   reasons: ["3 причины", "\"3 причини, чому українці за кордоном знайомляться у FlirtUA\": hook, then three fast reasons (each its own scene), then CTA."],
+  top20: ["20 причин (топ-3)", "\"20 причин обрати FlirtUA — ось 3 найсильніші для тебе\": hook that there are 20 reasons, then the 3 reasons from the list that matter most to the chosen audience and country (each its own scene), then CTA to see all 20 in the bot."],
   hometown: ["Земляки", "Focus on the unique 'Земляки' feature: the bot shows people from your hometown in Ukraine first (marked 🤝). Emotional but light: meeting someone from your Lviv/Kharkiv/Odesa in Valencia/Warsaw."],
   coffee: ["Кава сьогодні", "Focus on '☕️ Вільний сьогодні': for 24h your profile is higher with a 'can go for coffee' badge — spontaneous meetings after work. Show a city café scene."],
   compare: ["Обычные приложения vs FlirtUA", "Side-by-side contrast: 'звичайні додатки' (no brand names!) — strangers, language barrier, endless swiping; vs FlirtUA — our people nearby, Ukrainian language, works right in Telegram, free."],
@@ -305,13 +306,27 @@ function scriptPrompt() {
   return `Write a vertical video ad (TikTok / Reels / Shorts), 15-22 seconds total.
 
 PRODUCT: FlirtUA — a dating bot + mini app inside Telegram for Ukrainians living abroad (${cEn}). Telegram: @${INFO.bot || "FlirtUa_bot"}.
-Features (use 1-3 that fit the format, do not list everything):
-- profiles of Ukrainians nearby, sorted by distance; full-screen photo cards, swipe ❤️ / 👎
-- "🏠 Земляки": people from your hometown in Ukraine shown first with 🤝
-- "☕️ Вільний сьогодні": for 24h your profile is higher with a "can go for coffee" badge
-- "💌 Суперлайк" with a short message once a day
-- mutual like → you can write to each other right away
-- free, opens right in Telegram, no website registration, 18+ only
+Features — the official "20 reasons to choose FlirtUA". Use ONLY these facts (pick 1-3 that fit the format, do not list everything, do not invent others):
+1. made for Ukrainians abroad: Spain, Poland, Germany, Czech Republic, Italy — only people who live nearby
+2. Ukrainian language from the first word — no need to switch to English or the local language
+3. "Земляки першими 🤝": people from your hometown in Ukraine are shown first, with a badge
+4. every profile shows the person's route, e.g. "Львів → Валенсія"
+5. people nearby: profiles sorted by distance — your city, your district
+6. "☕️ Вільний сьогодні": a 24h badge for a coffee after work, no weeks of chatting
+7. two goals: looking for a partner OR friendship — separate feeds, nothing mixed
+8. honest friendship: looking for a female friend — you see women who also look for a female friend
+9. "💌 Суперлайк" with a message once a day
+10. mutual like → a "Написати" button opens the Telegram chat right away
+11. works right inside Telegram — nothing to install, no email, no passwords
+12. profile in one minute, up to 3 photos or videos
+13. like and match notifications in Telegram, reminders in the daytime, not at night
+14. free: profiles, likes, matches and chatting cost nothing
+15. honest Premium price: a week ≈5 € in Telegram Stars, no card; or free for inviting a friend
+16. 18+ only
+17. reports are checked by a human moderator; after several reports a profile is hidden automatically
+18. privacy: others see only distance in km, never the address
+19. pause your profile any time (likes and matches are kept) or delete it
+20. live support inside the app — a human answers
 ${stats}
 
 TARGET: ${aud} living in ${cEn}.
